@@ -1,26 +1,40 @@
 const canvasSketch = require('canvas-sketch');
 const random = require('canvas-sketch-util/random')
 const math = require('canvas-sketch-util/math')
+const Tweakpane = require('tweakpane');
 
 const settings = {
   dimensions: [ 1080, 1080 ],
   animate: true
 };
 
-const sketch = ({ context, width, height }) => {
+const params = {
+  lineDist: 200,
+  agentAmt: 250,
+  velocity: 0.25,
+  radius: 0,
+}
 
-  const agents = [];
-  for (let i = 0; i < 150; i++) {
-    const x = random.range(10, width - 10);
-    const y = random.range(10, height - 10);
+function createAgents (agents, agentAmt, width, height) {
+  for (let i = 0; i < agentAmt; i++) {
+    const x = random.range(20, width - 20);
+    const y = random.range(20, height - 20);
 
     agents.push(new Agent(x, y));
   }
+  return agents;
+}
 
+const sketch = ({ context, width, height }) => {
+
+  // manager.render()
+  
+  const agentArr = [];
+  const agents = createAgents(agentArr, params.agentAmt, width, height);
   return ({ context, width, height }) => {
     context.fillStyle = 'white';
     context.fillRect(0, 0, width, height);
-
+    updateAgentAmount(agentArr, params.agentAmt, width, height);
     for (let i = 0; i < agents.length; i++) {
       const agent = agents[i];
 
@@ -38,14 +52,27 @@ const sketch = ({ context, width, height }) => {
   };
 };
 
-canvasSketch(sketch, settings);
+const updateAgentAmount = (agents, agentAmt, width, height) => {
+  let current = agents.length
+
+  if (current !== agentAmt) {
+    if (current < agentAmt) {
+      return createAgents(agents, agentAmt - current, width, height)
+    } else if (current > agentAmt) {
+      for (let i = 0; i <= current - agentAmt; i++) {
+        agents.pop()
+      }
+    }
+  }
+  return agents;
+}
 
 const drawLine = (agentOne, agentTwo, context) => {
   
     const dist = agentOne.pos.getDistance(agentTwo.pos);
 
-    if (dist < 200) {
-      context.lineWidth = math.mapRange(dist, 0, 200, 1, .0001)
+    if (dist < params.lineDist) {
+      context.lineWidth = math.mapRange(dist, 0, params.lineDist, 1, .0001)
       context.beginPath();
       context.moveTo(agentOne.pos.x, agentOne.pos.y);
       context.lineTo(agentTwo.pos.x, agentTwo.pos.y);
@@ -70,13 +97,13 @@ class Vector {
 class Agent {
   constructor(x, y) {
     this.pos = new Vector(x, y);
-    this.vel = new Vector(random.range(-0.25, 0.25), random.range(-0.25, 0.25));
-    this.radius = random.range(0);
+    this.vel = new Vector(random.range(-1 * params.velocity, params.velocity), random.range(-1 * params.velocity, params.velocity));
+    this.radius = params.radius;
   }
 
   bounce(width, height) {
-    if ((this.pos.x <= 12) || (this.pos.x >= width - 12)) this.vel.x *= random.range(-0.2, -1.25);
-    if ((this.pos.y <= 12) || (this.pos.y >= height - 12)) this.vel.y *= random.range(-0.2, -1.25);
+    if ((this.pos.x <= 10) || (this.pos.x >= width - 10)) this.vel.x *= random.range(-0.4, -1.45);
+    if ((this.pos.y <= 10) || (this.pos.y >= height - 10)) this.vel.y *= random.range(-0.4, -1.45);
   }
 
   update() {
@@ -91,10 +118,32 @@ class Agent {
     context.lineWidth = 1;
 
     context.beginPath();
-    context.arc(0, 0, this.radius, 0, Math.PI * 2);
+    context.arc(0, 0, params.radius, 0, Math.PI * 2);
     context.fill();
     context.stroke();
 
     context.restore();
   }
 }
+
+const createPane = () => {
+  const pane = new Tweakpane.Pane();
+  let folder;
+
+  folder = pane.addFolder({ title: 'Untitled 1' });
+  folder.addInput(params, 'radius', {min: 0, max: 6});
+  folder.addInput(params, 'lineDist', {min: 10, max: 500});
+  folder.addInput(params, 'velocity', {min: 0.001, max: 30});
+
+  agentNum = folder.addInput(params, 'agentAmt', {min: 20, max: 1000, step: 1})
+
+};
+
+
+createPane();
+
+const start = async () => {
+  manager = await canvasSketch(sketch, settings);
+}
+
+start();
