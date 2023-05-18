@@ -13,12 +13,17 @@ const params = {
   agentAmt: 250,
   velocity: 0.25,
   radius: 0,
+  bounceWidth: settings.dimensions[0] - 12
 }
 
-function createAgents (agents, agentAmt, width, height) {
+let prevBounceWidth = params.bounceWidth;
+
+
+
+function createAgents (agents, agentAmt, w, h) {
   for (let i = 0; i < agentAmt; i++) {
-    const x = random.range(20, width - 20);
-    const y = random.range(20, height - 20);
+    const x = random.range(w, settings.dimensions[0] - w);
+    const y = random.range(20, h - 20);
 
     agents.push(new Agent(x, y));
   }
@@ -28,13 +33,14 @@ function createAgents (agents, agentAmt, width, height) {
 const sketch = ({ context, width, height }) => {
 
   // manager.render()
-  
+
   const agentArr = [];
-  const agents = createAgents(agentArr, params.agentAmt, width, height);
+  const agents = createAgents(agentArr, params.agentAmt, params.bounceWidth, height);
   return ({ context, width, height }) => {
     context.fillStyle = 'white';
     context.fillRect(0, 0, width, height);
-    updateAgentAmount(agentArr, params.agentAmt, width, height);
+    updateBounceWidth(agentArr, params.agentAmt, prevBounceWidth, params.bounceWidth, height);
+    updateAgentAmount(agentArr, params.agentAmt, params.bounceWidth, height);
     for (let i = 0; i < agents.length; i++) {
       const agent = agents[i];
 
@@ -47,7 +53,7 @@ const sketch = ({ context, width, height }) => {
     agents.forEach(agent => {
       agent.update();
       agent.draw(context);
-      agent.bounce(width, height);
+      agent.bounce(params.bounceWidth, height);
     })    
   };
 };
@@ -63,6 +69,24 @@ const updateAgentAmount = (agents, agentAmt, width, height) => {
         agents.pop()
       }
     }
+  }
+  return agents;
+}
+
+const clearAgents = (agents) => {
+  while (agents.length) {
+    agents.pop();
+  }
+  return agents;
+}
+
+const updateBounceWidth = (agents, agentAmt, prevBounceWidth, currentBounceWidth, height) => {
+  console.log('prev bounce width', prevBounceWidth, 'current bounce width', currentBounceWidth)
+  if (prevBounceWidth !== currentBounceWidth) {
+    prevBounceWidth = currentBounceWidth;
+  
+    let cleared = clearAgents(agents)
+    return createAgents(cleared, agentAmt, currentBounceWidth, height)
   }
   return agents;
 }
@@ -134,7 +158,7 @@ const createPane = () => {
   folder.addInput(params, 'radius', {min: 0, max: 6});
   folder.addInput(params, 'lineDist', {min: 10, max: 500});
   folder.addInput(params, 'velocity', {min: 0.001, max: 30});
-
+  folder.addInput(params, 'bounceWidth', {min: 596, max: settings.dimensions[0] - 12, step: 1})
   agentNum = folder.addInput(params, 'agentAmt', {min: 20, max: 1000, step: 1})
 
 };
